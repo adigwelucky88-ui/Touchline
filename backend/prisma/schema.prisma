@@ -1,0 +1,425 @@
+// Touchline relational model. See docs/ARCHITECTURE.md ("Data model").
+// Nothing here is football-specific: sports, positions, skills and attributes are catalogue rows.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ── Accounts and age ─────────────────────────────────────────────────────────
+
+enum AgeTier {
+  adult
+  teen
+  young_teen
+  child
+}
+
+enum UserRole {
+  athlete
+  guardian
+  scout
+  moderator
+  admin
+}
+
+model User {
+  id          String     @id @default(uuid()) @db.Uuid
+  /// Cognito `sub`. Null for guardian-managed child accounts.
+  cognitoSub  String?    @unique @map("cognito_sub")
+  email       String?    @unique
+  dateOfBirth DateTime   @map("date_of_birth") @db.Date
+  /// Cached from packages/core ageTier(); recomputed daily and on login.
+  ageTier     AgeTier    @map("age_tier")
+  country     String     @db.Char(2)
+  locale      String     @default("en")
+  roles       UserRole[] @default([athlete])
+  deletedAt   DateTime?  @map("deleted_at")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  profiles       AthleteProfile[]
+  guardianOf     Guardianship[]   @relation("guardian")
+  guardians      Guardianship[]   @relation("minor")
+  consents       Consent[]
+  uploads        Video[]          @relation("uploader")
+  reports        Report[]
+  blocksMade     Block[]          @relation("blocker")
+  blocksReceived Block[]          @relation("blocked")
+  follows        Follow[]
+  saves          Save[]
+
+  @@map("users")
+}
+
+enum GuardianshipStatus {
+  pending
+  verified
+  revoked
+}
+
+model Guardianship {
+  id         String             @id @default(uuid()) @db.Uuid
+  guardianId String             @map("guardian_id") @db.Uuid
+  minorId    String             @map("minor_id") @db.Uuid
+  status     GuardianshipStatus @default(pending)
+  verifiedAt DateTime?          @map("verified_at")
+  createdAt  DateTime           @default(now()) @map("created_at")
+
+  guardian User @relation("guardian", fields: [guardianId], references: [id])
+  minor    User @relation("minor", fields: [minorId], references: [id])
+
+  @@unique([guardianId, minorId])
+  @@map("guardianships")
+}
+
+enum ConsentKind {
+  terms
+  privacy
+  guardian
+  content_rights
+}
+
+/// Append-only record of what was agreed, by whom, and which document version.
+model Consent {
+  id        String      @id @default(uuid()) @db.Uuid
+  userId    String      @map("user_id") @db.Uuid
+  kind      ConsentKind
+  version   String
+  /// For guardian consent: the guardian who gave it.
+  grantedBy String?     @map("granted_by") @db.Uuid
+  createdAt DateTime    @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, kind])
+  @@map("consents")
+}
+
+// ── Sports catalogue ─────────────────────────────────────────────────────────
+
+enum SeasonFormat {
+  split_year
+  calendar_year
+}
+
+model Sport {
+  key          String       @id
+  labelKey     String       @map("label_key")
+  enabled      Boolean      @default(false)
+  seasonFormat SeasonFormat @map("season_format")
+  /// i18n keys for sport-specific words, e.g. { "team": "term.club" }.
+  terminology  Json
+
+  positions       Position[]
+  skillCategories SkillCategory[]
+  attributes      AttributeDefinition[]
+  profiles        AthleteProfile[]
+  organizations   Organization[]
+
+  @@map("sports")
+}
+
+model Position {
+  id        String @id @default(uuid()) @db.Uuid
+  sportKey  String @map("sport_key")
+  key       String
+  labelKey  String @map("label_key")
+  sortOrder Int    @default(0) @map("sort_order")
+
+  sport    Sport            @relation(fields: [sportKey], references: [key])
+  profiles AthleteProfile[]
+
+  @@unique([sportKey, key])
+  @@map("positions")
+}
+
+model SkillCategory {
+  id        String @id @default(uuid()) @db.Uuid
+  sportKey  String @map("sport_key")
+  key       String
+  labelKey  String @map("label_key")
+  sortOrder Int    @default(0) @map("sort_order")
+
+  sport  Sport           @relation(fields: [sportKey], references: [key])
+  videos VideoSkillTag[]
+
+  @@unique([sportKey, key])
+  @@map("skill_categories")
+}
+
+enum AttributeType {
+  enum
+  number
+  text
+  boolean
+}
+
+model AttributeDefinition {
+  id       String        @id @default(uuid()) @db.Uuid
+  sportKey String        @map("sport_key")
+  key      String
+  labelKey String        @map("label_key")
+  type     AttributeType
+  required Boolean       @default(false)
+  /// Enum options, min/max, maxLength. Validated by packages/core validateAttributes().
+  rules    Json          @default("{}")
+
+  sport  Sport              @relation(fields: [sportKey], references: [key])
+  values ProfileAttribute[]
+
+  @@unique([sportKey, key])
+  @@map("attribute_definitions")
+}
+
+// ── Athletes and careers ─────────────────────────────────────────────────────
+
+enum Visibility {
+  public
+  signed_in
+  private
+}
+
+/// One per user per sport, so a multi-sport athlete has several channels.
+model AthleteProfile {
+  id          String     @id @default(uuid()) @db.Uuid
+  userId      String     @map("user_id") @db.Uuid
+  sportKey    String     @map("sport_key")
+  handle      String     @unique
+  displayName String     @map("display_name")
+  positionId  String?    @map("position_id") @db.Uuid
+  country     String     @db.Char(2)
+  visibility  Visibility @default(public)
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  user       User               @relation(fields: [userId], references: [id])
+  sport      Sport              @relation(fields: [sportKey], references: [key])
+  position   Position?          @relation(fields: [positionId], references: [id])
+  attributes ProfileAttribute[]
+  chapters   Chapter[]
+  videos     Video[]
+  followers  Follow[]
+
+  @@unique([userId, sportKey])
+  @@index([sportKey, country])
+  @@map("athlete_profiles")
+}
+
+model ProfileAttribute {
+  profileId    String @map("profile_id") @db.Uuid
+  definitionId String @map("definition_id") @db.Uuid
+  /// Stored as JSON so one column holds enum, number, text or boolean values.
+  value        Json
+
+  profile    AthleteProfile      @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  definition AttributeDefinition @relation(fields: [definitionId], references: [id])
+
+  @@id([profileId, definitionId])
+  @@map("profile_attributes")
+}
+
+enum OrganizationKind {
+  club
+  academy
+  school
+  national_team
+}
+
+model Organization {
+  id        String           @id @default(uuid()) @db.Uuid
+  sportKey  String           @map("sport_key")
+  name      String
+  kind      OrganizationKind @default(club)
+  country   String           @db.Char(2)
+  verified  Boolean          @default(false)
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  sport    Sport     @relation(fields: [sportKey], references: [key])
+  chapters Chapter[]
+
+  @@index([sportKey, country, name])
+  @@map("organizations")
+}
+
+/// A season (or date range) an athlete spent at an organisation.
+model Chapter {
+  id             String    @id @default(uuid()) @db.Uuid
+  profileId      String    @map("profile_id") @db.Uuid
+  organizationId String    @map("organization_id") @db.Uuid
+  /// Label in the sport's season format, e.g. "2025/26".
+  season         String
+  /// Set when the organisation confirms the chapter (post-MVP).
+  verifiedAt     DateTime? @map("verified_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  profile      AthleteProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  organization Organization   @relation(fields: [organizationId], references: [id])
+  videos       Video[]
+
+  @@unique([profileId, organizationId, season])
+  @@map("chapters")
+}
+
+// ── Video ────────────────────────────────────────────────────────────────────
+
+enum VideoStatus {
+  uploading
+  processing
+  in_review
+  published
+  rejected
+  removed
+}
+
+model Video {
+  id              String      @id @default(uuid()) @db.Uuid
+  profileId       String      @map("profile_id") @db.Uuid
+  /// Who uploaded it: the athlete, a guardian or an academy staff member.
+  uploaderId      String      @map("uploader_id") @db.Uuid
+  chapterId       String?     @map("chapter_id") @db.Uuid
+  title           String
+  headline        String?
+  status          VideoStatus @default(uploading)
+  visibility      Visibility  @default(public)
+  durationSeconds Int?        @map("duration_seconds")
+  rawObjectKey    String?     @map("raw_object_key")
+  hlsManifestKey  String?     @map("hls_manifest_key")
+  thumbnailKey    String?     @map("thumbnail_key")
+  publishedAt     DateTime?   @map("published_at")
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  profile    AthleteProfile     @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  uploader   User               @relation("uploader", fields: [uploaderId], references: [id])
+  chapter    Chapter?           @relation(fields: [chapterId], references: [id])
+  skills     VideoSkillTag[]
+  moderation ModerationResult[]
+  reports    Report[]
+  saves      Save[]
+
+  @@index([status, publishedAt(sort: Desc)])
+  @@index([profileId, status])
+  @@map("videos")
+}
+
+model VideoSkillTag {
+  videoId         String @map("video_id") @db.Uuid
+  skillCategoryId String @map("skill_category_id") @db.Uuid
+
+  video         Video         @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  skillCategory SkillCategory @relation(fields: [skillCategoryId], references: [id])
+
+  @@id([videoId, skillCategoryId])
+  @@map("video_skill_tags")
+}
+
+// ── Safety ───────────────────────────────────────────────────────────────────
+
+enum ModerationSource {
+  rekognition
+  human
+}
+
+enum ModerationDecision {
+  approve
+  review
+  reject
+}
+
+model ModerationResult {
+  id         String             @id @default(uuid()) @db.Uuid
+  videoId    String             @map("video_id") @db.Uuid
+  source     ModerationSource
+  decision   ModerationDecision
+  /// Raw labels and confidence scores from Rekognition, or the reviewer's notes.
+  details    Json               @default("{}")
+  reviewerId String?            @map("reviewer_id") @db.Uuid
+  createdAt  DateTime           @default(now()) @map("created_at")
+
+  video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@index([videoId])
+  @@map("moderation_results")
+}
+
+enum ReportStatus {
+  open
+  actioned
+  dismissed
+}
+
+model Report {
+  id         String       @id @default(uuid()) @db.Uuid
+  reporterId String       @map("reporter_id") @db.Uuid
+  videoId    String?      @map("video_id") @db.Uuid
+  /// Set when a profile rather than a video is reported.
+  profileId  String?      @map("profile_id") @db.Uuid
+  reason     String
+  status     ReportStatus @default(open)
+  createdAt  DateTime     @default(now()) @map("created_at")
+  resolvedAt DateTime?    @map("resolved_at")
+
+  reporter User   @relation(fields: [reporterId], references: [id])
+  video    Video? @relation(fields: [videoId], references: [id])
+
+  @@index([status, createdAt])
+  @@map("reports")
+}
+
+model Block {
+  blockerId String   @map("blocker_id") @db.Uuid
+  blockedId String   @map("blocked_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  blocker User @relation("blocker", fields: [blockerId], references: [id])
+  blocked User @relation("blocked", fields: [blockedId], references: [id])
+
+  @@id([blockerId, blockedId])
+  @@map("blocks")
+}
+
+/// Append-only log of privileged actions (moderation, takedowns, consent changes).
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  actorId    String?  @map("actor_id") @db.Uuid
+  action     String
+  targetType String   @map("target_type")
+  targetId   String   @map("target_id")
+  details    Json     @default("{}")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([targetType, targetId])
+  @@map("audit_log")
+}
+
+// ── Social ───────────────────────────────────────────────────────────────────
+
+model Follow {
+  userId    String   @map("user_id") @db.Uuid
+  profileId String   @map("profile_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  profile AthleteProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@id([userId, profileId])
+  @@map("follows")
+}
+
+/// "Watch later".
+model Save {
+  userId    String   @map("user_id") @db.Uuid
+  videoId   String   @map("video_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@id([userId, videoId])
+  @@map("saves")
+}

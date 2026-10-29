@@ -1,0 +1,709 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/v1/health": {
+      "get": {
+        "operationId": "healthCheck",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/v1/sports": {
+      "get": {
+        "operationId": "sportsList",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SportDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "sports"
+        ]
+      }
+    },
+    "/v1/sports/{key}": {
+      "get": {
+        "operationId": "sportsGet",
+        "parameters": [
+          {
+            "name": "key",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SportDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "sports"
+        ]
+      }
+    },
+    "/v1/athletes": {
+      "get": {
+        "operationId": "athletesList",
+        "parameters": [
+          {
+            "name": "sport",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "description": "Search by name",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AthletePageDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "athletes"
+        ]
+      }
+    },
+    "/v1/athletes/{handle}": {
+      "get": {
+        "operationId": "athletesGet",
+        "parameters": [
+          {
+            "name": "handle",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AthleteDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "athletes"
+        ]
+      }
+    },
+    "/v1/athletes/{handle}/videos": {
+      "get": {
+        "operationId": "athletesVideosFor",
+        "parameters": [
+          {
+            "name": "handle",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "season",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "2025/26",
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoPageDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "athletes"
+        ]
+      }
+    },
+    "/v1/videos": {
+      "get": {
+        "operationId": "videosList",
+        "parameters": [
+          {
+            "name": "sport",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "skill",
+            "required": false,
+            "in": "query",
+            "description": "Skill category key",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoPageDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "videos"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "Touchline API",
+    "description": "Career video platform API. Generated clients live in packages/api-client.",
+    "version": "0.1.0",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http"
+      }
+    },
+    "schemas": {
+      "HealthDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "ok"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "TerminologyDto": {
+        "type": "object",
+        "properties": {
+          "team": {
+            "type": "string"
+          },
+          "match": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "team",
+          "match"
+        ]
+      },
+      "LabelledKeyDto": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "labelKey": {
+            "type": "string",
+            "description": "i18n key"
+          }
+        },
+        "required": [
+          "key",
+          "labelKey"
+        ]
+      },
+      "AttributeOptionDto": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          },
+          "labelKey": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "value",
+          "labelKey"
+        ]
+      },
+      "AttributeDefinitionDto": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "labelKey": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "enum",
+              "number",
+              "text",
+              "boolean"
+            ]
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AttributeOptionDto"
+            }
+          },
+          "min": {
+            "type": "number"
+          },
+          "max": {
+            "type": "number"
+          },
+          "maxLength": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "key",
+          "labelKey",
+          "type",
+          "required"
+        ]
+      },
+      "SportDto": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "example": "football"
+          },
+          "labelKey": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "seasonFormat": {
+            "type": "string",
+            "enum": [
+              "split_year",
+              "calendar_year"
+            ]
+          },
+          "terminology": {
+            "$ref": "#/components/schemas/TerminologyDto"
+          },
+          "positions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LabelledKeyDto"
+            }
+          },
+          "skillCategories": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LabelledKeyDto"
+            }
+          },
+          "attributes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AttributeDefinitionDto"
+            }
+          }
+        },
+        "required": [
+          "key",
+          "labelKey",
+          "enabled",
+          "seasonFormat",
+          "terminology",
+          "positions",
+          "skillCategories",
+          "attributes"
+        ]
+      },
+      "AthleteSummaryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "handle": {
+            "type": "string",
+            "example": "ayo-martins"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "sport": {
+            "type": "string",
+            "example": "football"
+          },
+          "position": {
+            "type": "string",
+            "description": "Position key from the sport catalogue",
+            "example": "forward"
+          },
+          "country": {
+            "type": "string",
+            "description": "ISO 3166-1 alpha-2",
+            "example": "NG"
+          },
+          "currentOrganization": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "handle",
+          "displayName",
+          "sport",
+          "position",
+          "country",
+          "currentOrganization"
+        ]
+      },
+      "AthletePageDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AthleteSummaryDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ]
+      },
+      "ChapterDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "season": {
+            "type": "string",
+            "example": "2025/26"
+          },
+          "organizationName": {
+            "type": "string"
+          },
+          "verified": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "season",
+          "organizationName",
+          "verified"
+        ]
+      },
+      "AthleteDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "handle": {
+            "type": "string",
+            "example": "ayo-martins"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "sport": {
+            "type": "string",
+            "example": "football"
+          },
+          "position": {
+            "type": "string",
+            "description": "Position key from the sport catalogue",
+            "example": "forward"
+          },
+          "country": {
+            "type": "string",
+            "description": "ISO 3166-1 alpha-2",
+            "example": "NG"
+          },
+          "currentOrganization": {
+            "type": "string",
+            "nullable": true
+          },
+          "attributes": {
+            "type": "object",
+            "description": "Values keyed by the sport attribute definition key",
+            "additionalProperties": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            }
+          },
+          "chapters": {
+            "description": "Newest season first",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChapterDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "handle",
+          "displayName",
+          "sport",
+          "position",
+          "country",
+          "currentOrganization",
+          "attributes",
+          "chapters"
+        ]
+      },
+      "VideoDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "athleteId": {
+            "type": "string"
+          },
+          "athleteHandle": {
+            "type": "string"
+          },
+          "athleteName": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "headline": {
+            "type": "string",
+            "nullable": true
+          },
+          "season": {
+            "type": "string",
+            "example": "2025/26"
+          },
+          "organizationName": {
+            "type": "string"
+          },
+          "skill": {
+            "type": "string",
+            "description": "Primary skill category key",
+            "example": "goals"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "uploading",
+              "processing",
+              "in_review",
+              "published",
+              "rejected",
+              "removed"
+            ]
+          },
+          "visibility": {
+            "type": "string",
+            "enum": [
+              "public",
+              "signed_in",
+              "private"
+            ]
+          },
+          "durationSeconds": {
+            "type": "number",
+            "nullable": true
+          },
+          "thumbnailUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "playbackUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "HLS manifest URL"
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "athleteId",
+          "athleteHandle",
+          "athleteName",
+          "title",
+          "headline",
+          "season",
+          "organizationName",
+          "skill",
+          "status",
+          "visibility",
+          "durationSeconds",
+          "thumbnailUrl",
+          "playbackUrl",
+          "createdAt"
+        ]
+      },
+      "VideoPageDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VideoDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm test
+      - name: API e2e
+        run: pnpm --filter @touchline/backend test:e2e
+      - name: OpenAPI client is up to date
+        run: |
+          pnpm --filter @touchline/backend openapi
+          pnpm --filter @touchline/api-client generate
+          git diff --exit-code -- backend/openapi.json packages/api-client/src/generated
+      - name: CDK synth (dev, prod)
+        working-directory: infra
+        run: |
+          pnpm cdk synth -c env=dev --quiet
+          pnpm cdk synth -c env=prod --quiet
+
+  api-image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - name: Build API image
+        run: docker build -f backend/Dockerfile -t touchline-api:${{ github.sha }} .

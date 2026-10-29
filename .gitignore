@@ -1,0 +1,18 @@
+node_modules/
+dist/
+.turbo/
+.expo/
+.next/
+cdk.out/
+coverage/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+.DS_Store
+# Expo continuous native generation
+apps/app/ios/
+apps/app/android/
+
+# Claude Code worktrees (local only)
+.claude/worktrees/
