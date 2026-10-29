@@ -1,0 +1,102 @@
+{
+  "en": {
+    "name": "English",
+    "dir": "ltr"
+  },
+  "fr": {
+    "name": "Français",
+    "dir": "ltr"
+  },
+  "es": {
+    "name": "Español",
+    "dir": "ltr"
+  },
+  "pt": {
+    "name": "Português",
+    "dir": "ltr"
+  },
+  "de": {
+    "name": "Deutsch",
+    "dir": "ltr"
+  },
+  "it": {
+    "name": "Italiano",
+    "dir": "ltr"
+  },
+  "ar": {
+    "name": "العربية",
+    "dir": "rtl"
+  },
+  "hi": {
+    "name": "हिन्दी",
+    "dir": "ltr"
+  },
+  "zh": {
+    "name": "中文（简体）",
+    "dir": "ltr"
+  },
+  "ja": {
+    "name": "日本語",
+    "dir": "ltr"
+  },
+  "ko": {
+    "name": "한국어",
+    "dir": "ltr"
+  },
+  "sw": {
+    "name": "Kiswahili",
+    "dir": "ltr"
+  },
+  "yo": {
+    "name": "Yorùbá",
+    "dir": "ltr"
+  },
+  "ha": {
+    "name": "Hausa",
+    "dir": "ltr"
+  },
+  "ig": {
+    "name": "Igbo",
+    "dir": "ltr"
+  },
+  "id": {
+    "name": "Bahasa Indonesia",
+    "dir": "ltr"
+  },
+  "tr": {
+    "name": "Türkçe",
+    "dir": "ltr"
+  },
+  "ru": {
+    "name": "Русский",
+    "dir": "ltr"
+  },
+  "bn": {
+    "name": "বাংলা",
+    "dir": "ltr"
+  },
+  "ur": {
+    "name": "اردو",
+    "dir": "rtl"
+  },
+  "vi": {
+    "name": "Tiếng Việt",
+    "dir": "ltr"
+  },
+  "th": {
+    "name": "ไทย",
+    "dir": "ltr"
+  },
+  "nl": {
+    "name": "Nederlands",
+    "dir": "ltr"
+  },
+  "pl": {
+    "name": "Polski",
+    "dir": "ltr"
+  },
+  "fa": {
+    "name": "فارسی",
+    "dir": "rtl"
+  }
+}

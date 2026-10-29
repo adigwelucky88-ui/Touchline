@@ -1,0 +1,18 @@
+{
+  "name": "@touchline/i18n",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Translations for all Touchline clients (ported from the prototype). English is the fallback.",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "i18next": "^26.5.11"
+  },
+  "devDependencies": {
+    "i18next": "^26.5.11",
+    "typescript": "~6.0.3"
+  }
+}
